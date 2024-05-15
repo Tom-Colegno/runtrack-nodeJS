@@ -1,0 +1,5 @@
+Récupérer une catégorie à l’aide de son id.
+
+✅fait✅
+
+db.category.find()

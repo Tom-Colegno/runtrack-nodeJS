@@ -1,0 +1,5 @@
+Récupérez l’ensemble des données de la collection “category”.
+
+✅fait✅
+
+db.category.find()

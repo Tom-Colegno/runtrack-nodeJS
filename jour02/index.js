@@ -1,9 +1,7 @@
-// index.js
+const server = require('./server');
 
-const app = require('./server'); // Import du serveur Express depuis server.js
+const PORT = process.env.PORT || 3002;
 
-// Démarrage du serveur
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
 });
