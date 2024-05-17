@@ -1,15 +1,19 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const port = 80;
 
+// Définir le dossier "public" comme dossier statique
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Route pour la page d'accueil
 app.get('/', (req, res) => {
-  res.send('<h1>Page d\'accueil</h1><p>Ceci est la page d\'accueil de mon site web.</p>');
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
 // Route pour la page "about"
 app.get('/about', (req, res) => {
-  res.send('<h1>À propos</h1><p>Cette page présente mon projet.</p>');
+  res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
 app.listen(port, () => {
