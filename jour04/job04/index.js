@@ -1,51 +1,56 @@
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 
-// URL de connexion à MongoDB
-const url = 'mongodb://localhost:27017'; // Assurez-vous que MongoDB est en cours d'exécution sur le port par défaut
+mongoose.connect('mongodb+srv://tomcolegno:dJKLKGrkAKnRn1Bq@runtrackcluster.2gjgs0a.mongodb.net//LaPlateforme')
+.then(() => {
+    console.log('Connexion à la base de données réussie.');
 
-// Nom de la base de données
-const dbName = 'LaPlateforme';
+    const yearSchema = new mongoose.Schema({
+        year: String,
+    }, { versionKey: false });
+    const Years = mongoose.model('year', yearSchema, 'year');
+    const yearData = [
+        { year: 'bachelor 1' },
+        { year: 'bachelor 2' },
+        { year: 'bachelor 3' }
+    ]
 
-// Données d'exemple pour les étudiants
-const studentsData = [
-    { lastname: 'LeBricoleur', firstname: 'Bob', students_number: '123456', year_id: 'Bachelor 1' },
-    { lastname: 'Doe', firstname: 'John', students_number: '789012', year_id: 'Bachelor 2' },
-    { lastname: 'Dupont', firstname: 'Marine', students_number: '345678', year_id: 'Bachelor 3' }
-];
+    return(Years.insertMany(yearData));
+})
+.then((insertedYears) => {
+    console.log('Niveaux de cursus ajoutés :', insertedYears);
 
-// Données d'exemple pour les années (cursus)
-const yearsData = [
-    { year: 'Bachelor 1' },
-    { year: 'Bachelor 2' },
-    { year: 'Bachelor 3' }
-];
+    // Définition du schéma "student"
+    const studentSchema = new mongoose.Schema({
+        lastname: String,
+        firstname: String,
+        students_number: Number,
+        year_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'year' // Référence au modèle "year"
+        }
+    });
+    const Student = mongoose.model('student', studentSchema, 'student');
 
-// Fonction pour se connecter à la base de données MongoDB et insérer les données
-async function connectToDatabase() {
-    try {
-        // Connexion au serveur MongoDB
-        const client = new MongoClient(url);
-        await client.connect();
-        console.log('Connecté à MongoDB');
+    const updateQuery = { $set: { year_id: null }};
+    const options = { multi: true };
+    return(Student.updateMany({}, updateQuery, options));
+})
+.then((updateResult) => {
+    console.log('Suppression des références existantes terminée :', updateResult.nModified, 'étudiants mis à jour.');
 
-        // Sélection de la base de données
-        const db = client.db(dbName);
+    // Maintenant, nous allons mettre à jour chaque étudiant avec l'année de cursus correspondante
+    return(mongoose.model('year').find({}));
+})
+.then((years) => {
+    const updates = years.map((year) => ({
+        updateOne: {
+            filter: { year_id: null }, // Mettre à jour seulement les étudiants sans année de cursus
+            update: { $set: { year_id: year._id } }
+        }
+    }));
 
-        // Insertion des données d'exemple pour les années (cursus)
-        await db.collection('year').insertMany(yearsData);
-        console.log('Années insérées avec succès');
-
-        // Insertion des données d'exemple pour les étudiants
-        await db.collection('student').insertMany(studentsData);
-        console.log('Étudiants insérés avec succès');
-
-        // Fermer la connexion
-        await client.close();
-        console.log('Connexion fermée');
-    } catch (error) {
-        console.error('Erreur de connexion à la base de données :', error);
-    }
-}
-
-// Appel de la fonction pour se connecter à la base de données et insérer les données
-connectToDatabase();
+    mongoose.model('student').bulkWrite(updates);
+})
+.catch((err) => {
+    console.error(`Une erreur est survenue : ${err}`);
+})
